@@ -1,0 +1,23 @@
+# Environnement
+.env
+__pycache__/
+*.pyc
+*.pyo
+
+# Données sensibles
+data/raw/
+data/processed/
+
+# Python
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
