@@ -1,0 +1,69 @@
+id: sport_data_pipeline
+namespace: sport.data
+
+description: "Pipeline POC Avantages Sportifs - Sport Data Solution"
+
+tasks:
+  - id: ingestion
+    type: io.kestra.plugin.scripts.python.Commands
+    namespaceFiles:
+      enabled: true
+    commands:
+      - python src/ingestion/load_data.py
+    env:
+      DATABASE_URL: "{{ secret('DATABASE_URL') }}"
+
+  - id: simulation
+    type: io.kestra.plugin.scripts.python.Commands
+    namespaceFiles:
+      enabled: true
+    commands:
+      - python src/simulation/strava_gen.py
+    env:
+      DATABASE_URL: "{{ secret('DATABASE_URL') }}"
+
+  - id: validation_gmaps
+    type: io.kestra.plugin.scripts.python.Commands
+    namespaceFiles:
+      enabled: true
+    commands:
+      - python src/validation/gmaps_check.py
+    env:
+      DATABASE_URL: "{{ secret('DATABASE_URL') }}"
+      GOOGLE_MAPS_API_KEY: "{{ secret('GOOGLE_MAPS_API_KEY') }}"
+
+  - id: calcul_avantages
+    type: io.kestra.plugin.scripts.python.Commands
+    namespaceFiles:
+      enabled: true
+    commands:
+      - python src/eligibility/compute.py
+    env:
+      DATABASE_URL: "{{ secret('DATABASE_URL') }}"
+
+  - id: qualite_donnees
+    type: io.kestra.plugin.scripts.python.Commands
+    namespaceFiles:
+      enabled: true
+    commands:
+      - python src/quality/expectations.py
+    env:
+      DATABASE_URL: "{{ secret('DATABASE_URL') }}"
+
+  - id: streaming_slack
+    type: io.kestra.plugin.scripts.python.Commands
+    namespaceFiles:
+      enabled: true
+    commands:
+      - python src/notifications/producer.py
+      - python src/notifications/consumer.py
+    env:
+      DATABASE_URL: "{{ secret('DATABASE_URL') }}"
+      SLACK_BOT_TOKEN: "{{ secret('SLACK_BOT_TOKEN') }}"
+      SLACK_CHANNEL: "{{ secret('SLACK_CHANNEL') }}"
+
+triggers:
+  - id: schedule
+    type: io.kestra.plugin.core.trigger.Schedule
+    cron: "0 8 * * 1"
+    description: "Exécution automatique chaque lundi à 8h"
