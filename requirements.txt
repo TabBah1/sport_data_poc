@@ -7,3 +7,4 @@ requests==2.32.3
 faker==25.2.0
 great-expectations==1.18.1
 slack-sdk==3.27.2 
+kafka-python==2.0.2
