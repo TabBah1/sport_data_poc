@@ -5,6 +5,7 @@ from kafka import KafkaConsumer
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 from dotenv import load_dotenv
+from datetime import datetime
 
 load_dotenv()
 
@@ -25,15 +26,36 @@ def format_message(activity: dict) -> str:
     sport      = activity.get("sport_name", "")
     distance_m = activity.get("distance_m")
     comment    = activity.get("comment")
+    start_str  = activity.get("start_date")
+    end_str    = activity.get("end_date")
 
-    if distance_m:
+    # Calcul de la durée en minutes
+    duration_min = None
+    if start_str and end_str:
+        try:
+            start = datetime.fromisoformat(start_str)
+            end = datetime.fromisoformat(end_str)
+            duration_min = round((end - start).total_seconds() / 60)
+        except (ValueError, TypeError):
+            duration_min = None
+
+    # Verbe selon le sport
+    verbe = {
+        "Running": "courir",
+        "Randonnée": "marcher",
+        "Natation": "nager",
+    }.get(sport, "faire du/de la " + sport.lower())
+
+    if distance_m and duration_min:
         distance_km = round(distance_m / 1000, 1)
-        msg = f"Bravo {first_name} {last_name} ! Tu viens de faire {distance_km} km de {sport} !"
+        msg = f"Bravo {first_name} {last_name} ! Tu viens de {verbe} {distance_km} km en {duration_min} min !"
+    elif duration_min:
+        msg = f"Bravo {first_name} {last_name} ! Tu viens de faire {duration_min} min de {sport} !"
     else:
         msg = f"Bravo {first_name} {last_name} ! Séance de {sport} terminée !"
 
     if comment:
-        msg += f'\n"{comment}"'
+        msg += f' ("{comment}")'
 
     return msg
 
