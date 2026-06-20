@@ -42,9 +42,10 @@ def format_message(activity: dict) -> str:
     # Verbe selon le sport
     verbe = {
         "Running": "courir",
+        "Course à pied": "courir",
         "Randonnée": "marcher",
         "Natation": "nager",
-    }.get(sport, "faire du/de la " + sport.lower())
+    }.get(sport, f"faire du {sport}")
 
     if distance_m and duration_min:
         distance_km = round(distance_m / 1000, 1)
