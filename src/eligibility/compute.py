@@ -12,6 +12,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 DB_URL = os.getenv("DATABASE_URL")
+BONUS_RATE = float(os.getenv("BONUS_RATE", "0.05"))
+WELLNESS_MIN_ACTIVITIES = int(os.getenv("WELLNESS_MIN_ACTIVITIES", "15"))
+WELLNESS_DAYS = int(os.getenv("WELLNESS_DAYS", "5"))
 
 def get_engine():
     if not DB_URL:
@@ -28,6 +31,12 @@ def log_pipeline(engine, step, status, message):
 
 def compute_advantages(engine):
     logger.info("Calcul des avantages en cours...")
+    logger.info(f"Paramètres actifs : prime={BONUS_RATE*100:.1f}%, seuil bien-être={WELLNESS_MIN_ACTIVITIES} activités, jours accordés={WELLNESS_DAYS}")
+
+    with engine.connect() as conn:
+        # Idempotence : on vide la table avant recalcul pour permettre les relances
+        conn.execute(text("TRUNCATE TABLE advantages RESTART IDENTITY"))
+        conn.commit()
 
     with engine.connect() as conn:
         # Récupérer tous les salariés
@@ -64,12 +73,12 @@ def compute_advantages(engine):
 
         # Prime 5% : trajet sportif + validé
         if commute_mode in ("walking_running", "cycling_scooter") and employee_id in valid_commute_ids:
-            salary_bonus = round(float(gross_salary) * 0.05, 2)
+            salary_bonus = round(float(gross_salary) * BONUS_RATE, 2)
             prime_count += 1
 
-        # 5 jours bien-être : >= 15 activités
-        if nb_activities >= 15:
-            wellness_days = 5
+        # Jours bien-être : selon paramètre WELLNESS_MIN_ACTIVITIES
+        if nb_activities >= WELLNESS_MIN_ACTIVITIES:
+            wellness_days = WELLNESS_DAYS
             wellness_count += 1
 
         results.append({
