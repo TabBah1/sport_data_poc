@@ -132,8 +132,15 @@ def generate_activities(engine) -> int:
     logger.info(f"{len(df)} activités générées et insérées.")
     return len(df)
 
+def truncate_activities(engine):
+    with engine.connect() as conn:
+        conn.execute(text("TRUNCATE TABLE activities RESTART IDENTITY"))
+        conn.commit()
+    logger.info("Table activities vidée (idempotence).")
+
 def run():
     engine = get_engine()
+    truncate_activities(engine)
     try:
         count = generate_activities(engine)
         log_pipeline(engine, "strava_gen", "success", f"{count} activités simulées")

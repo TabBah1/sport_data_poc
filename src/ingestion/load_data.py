@@ -99,8 +99,15 @@ def load_sport_data(engine) -> int:
     logger.info(f"{len(df)} lignes sport chargées ({df['sport_name'].isna().sum()} sans sport déclaré).")
     return len(df)
 
+def truncate_tables(engine):
+    with engine.connect() as conn:
+        conn.execute(text("TRUNCATE TABLE sports, employees RESTART IDENTITY CASCADE"))
+        conn.commit()
+    logger.info("Tables employees et sports vidées (idempotence).")
+
 def run():
     engine = get_engine()
+    truncate_tables(engine)
     for step, fn in [("load_hr", load_hr_data), ("load_sports", load_sport_data)]:
         try:
             count = fn(engine)

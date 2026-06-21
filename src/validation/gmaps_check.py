@@ -121,8 +121,15 @@ def validate_commutes(engine):
     logger.info(f"Validation terminée : {valides} valides, {invalides} invalides.")
     return len(validations)
 
+def truncate_validations(engine):
+    with engine.connect() as conn:
+        conn.execute(text("TRUNCATE TABLE commute_validation RESTART IDENTITY"))
+        conn.commit()
+    logger.info("Table commute_validation vidée (idempotence).")
+
 def run():
     engine = get_engine()
+    truncate_validations(engine)
     try:
         count = validate_commutes(engine)
         log_pipeline(engine, "gmaps_validation", "success", f"{count} trajets validés")
