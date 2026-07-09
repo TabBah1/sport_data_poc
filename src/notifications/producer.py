@@ -15,7 +15,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 DB_URL = os.getenv("DATABASE_URL")
-KAFKA_BROKER = "localhost:9092"
+KAFKA_BROKER = os.getenv("KAFKA_BROKER", "localhost:9092")
 TOPIC = "sport-activities"
 
 def get_engine():

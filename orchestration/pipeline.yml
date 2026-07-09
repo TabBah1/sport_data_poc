@@ -4,66 +4,95 @@ namespace: sport.data
 description: "Pipeline POC Avantages Sportifs - Sport Data Solution"
 
 tasks:
-  - id: ingestion
-    type: io.kestra.plugin.scripts.python.Commands
-    namespaceFiles:
-      enabled: true
-    commands:
-      - python src/ingestion/load_data.py
-    env:
-      DATABASE_URL: "{{ secret('DATABASE_URL') }}"
+  - id: pipeline
+    type: io.kestra.plugin.core.flow.WorkingDirectory
+    tasks:
+      - id: clone_repo
+        type: io.kestra.plugin.git.Clone
+        url: https://github.com/TabBah1/sport_data_poc.git
+        branch: main
 
-  - id: simulation
-    type: io.kestra.plugin.scripts.python.Commands
-    namespaceFiles:
-      enabled: true
-    commands:
-      - python src/simulation/strava_gen.py
-    env:
-      DATABASE_URL: "{{ secret('DATABASE_URL') }}"
+      - id: install_dependencies
+        type: io.kestra.plugin.scripts.python.Commands
+        taskRunner:
+          type: io.kestra.plugin.core.runner.Process
+        beforeCommands:
+          - pip install --quiet pandas sqlalchemy psycopg2-binary python-dotenv requests faker slack-sdk kafka-python great-expectations
+        commands:
+          - echo "Dependances installees"
 
-  - id: validation_gmaps
-    type: io.kestra.plugin.scripts.python.Commands
-    namespaceFiles:
-      enabled: true
-    commands:
-      - python src/validation/gmaps_check.py
-    env:
-      DATABASE_URL: "{{ secret('DATABASE_URL') }}"
-      GOOGLE_MAPS_API_KEY: "{{ secret('GOOGLE_MAPS_API_KEY') }}"
+      - id: ingestion
+        type: io.kestra.plugin.scripts.python.Commands
+        taskRunner:
+          type: io.kestra.plugin.core.runner.Process
+        env:
+          DATABASE_URL: "{{ secret('DATABASE_URL') }}"
+        commands:
+          - python src/ingestion/load_data.py
 
-  - id: calcul_avantages
-    type: io.kestra.plugin.scripts.python.Commands
-    namespaceFiles:
-      enabled: true
-    commands:
-      - python src/eligibility/compute.py
-    env:
-      DATABASE_URL: "{{ secret('DATABASE_URL') }}"
+      - id: simulation
+        type: io.kestra.plugin.scripts.python.Commands
+        taskRunner:
+          type: io.kestra.plugin.core.runner.Process
+        env:
+          DATABASE_URL: "{{ secret('DATABASE_URL') }}"
+        commands:
+          - python src/simulation/strava_gen.py
 
-  - id: qualite_donnees
-    type: io.kestra.plugin.scripts.python.Commands
-    namespaceFiles:
-      enabled: true
-    commands:
-      - python src/quality/expectations.py
-    env:
-      DATABASE_URL: "{{ secret('DATABASE_URL') }}"
+      - id: validation_gmaps
+        type: io.kestra.plugin.scripts.python.Commands
+        taskRunner:
+          type: io.kestra.plugin.core.runner.Process
+        env:
+          DATABASE_URL: "{{ secret('DATABASE_URL') }}"
+          GOOGLE_MAPS_API_KEY: "{{ secret('GOOGLE_MAPS_API_KEY') }}"
+        commands:
+          - python src/validation/gmaps_check.py
 
-  - id: streaming_slack
-    type: io.kestra.plugin.scripts.python.Commands
-    namespaceFiles:
-      enabled: true
-    commands:
-      - python src/notifications/producer.py
-      - python src/notifications/consumer.py
-    env:
-      DATABASE_URL: "{{ secret('DATABASE_URL') }}"
-      SLACK_BOT_TOKEN: "{{ secret('SLACK_BOT_TOKEN') }}"
-      SLACK_CHANNEL: "{{ secret('SLACK_CHANNEL') }}"
+      - id: calcul_avantages
+        type: io.kestra.plugin.scripts.python.Commands
+        taskRunner:
+          type: io.kestra.plugin.core.runner.Process
+        env:
+          DATABASE_URL: "{{ secret('DATABASE_URL') }}"
+          BONUS_RATE: "{{ secret('BONUS_RATE') }}"
+          WELLNESS_MIN_ACTIVITIES: "{{ secret('WELLNESS_MIN_ACTIVITIES') }}"
+          WELLNESS_DAYS: "{{ secret('WELLNESS_DAYS') }}"
+        commands:
+          - python src/eligibility/compute.py
+
+      - id: qualite_donnees
+        type: io.kestra.plugin.scripts.python.Commands
+        taskRunner:
+          type: io.kestra.plugin.core.runner.Process
+        env:
+          DATABASE_URL: "{{ secret('DATABASE_URL') }}"
+        commands:
+          - python src/quality/expectations.py
+
+      - id: streaming_producer
+        type: io.kestra.plugin.scripts.python.Commands
+        taskRunner:
+          type: io.kestra.plugin.core.runner.Process
+        env:
+          DATABASE_URL: "{{ secret('DATABASE_URL') }}"
+          KAFKA_BROKER: redpanda:9092
+        commands:
+          - python src/notifications/producer.py
+
+      - id: streaming_consumer
+        type: io.kestra.plugin.scripts.python.Commands
+        taskRunner:
+          type: io.kestra.plugin.core.runner.Process
+        env:
+          SLACK_BOT_TOKEN: "{{ secret('SLACK_BOT_TOKEN') }}"
+          SLACK_CHANNEL: "{{ secret('SLACK_CHANNEL') }}"
+          KAFKA_BROKER: redpanda:9092
+        commands:
+          - python src/notifications/consumer.py
 
 triggers:
   - id: schedule
     type: io.kestra.plugin.core.trigger.Schedule
     cron: "0 8 * * 1"
-    description: "Exécution automatique chaque lundi à 8h"
+    description: "Execution automatique chaque lundi a 8h"
