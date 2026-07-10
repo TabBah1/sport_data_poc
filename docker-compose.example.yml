@@ -33,10 +33,12 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./:/app/project
     environment:
-      SECRET_DATABASE_URL: cG9zdGdyZXNxbDovL3Bvc3RncmVzOnNwb3J0MjAyNEBob3N0LmRvY2tlci5pbnRlcm5hbDo1NDMyL3Nwb3J0X3BvYw==
-      SECRET_GOOGLE_MAPS_API_KEY: QUl6YVN5Q3hHVjJROEZROGVqQkJ2bU9VVzZYcGZxbmxlcnF3MmRN
-      SECRET_SLACK_BOT_TOKEN: eG94Yi0xMTM4OTE0NDA0NjM1OC0xMTM3NTgzNjYwMzU0My1wYmhFaTl6NWtIbXNzSjJOZHhQMlFBaGk=
-      SECRET_SLACK_CHANNEL: c3BvcnQtZGF0YS1wb2M=
+      # Générer ces valeurs avec : python generate_secrets.py
+      # Les valeurs sont vos variables .env encodées en base64
+      SECRET_DATABASE_URL: VOTRE_DATABASE_URL_EN_BASE64
+      SECRET_GOOGLE_MAPS_API_KEY: VOTRE_GOOGLE_MAPS_KEY_EN_BASE64
+      SECRET_SLACK_BOT_TOKEN: VOTRE_SLACK_TOKEN_EN_BASE64
+      SECRET_SLACK_CHANNEL: VOTRE_SLACK_CHANNEL_EN_BASE64
       SECRET_BONUS_RATE: MC4wNQ==
       SECRET_WELLNESS_MIN_ACTIVITIES: MTU=
       SECRET_WELLNESS_DAYS: NQ==
@@ -46,7 +48,7 @@ services:
             url: jdbc:postgresql://host.docker.internal:5432/kestra
             driverClassName: org.postgresql.Driver
             username: postgres
-            password: sport2024
+            password: VOTRE_MOT_DE_PASSE_POSTGRES
         kestra:
           server:
             basic-auth:
