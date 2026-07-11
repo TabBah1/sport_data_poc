@@ -67,8 +67,7 @@ def run():
         TOPIC,
         bootstrap_servers=KAFKA_BROKER,
         value_deserializer=lambda m: json.loads(m.decode("utf-8")),
-        auto_offset_reset="earliest",
-        consumer_timeout_ms=15000,
+        auto_offset_reset="latest",
         group_id="slack-notifier"
     )
 
