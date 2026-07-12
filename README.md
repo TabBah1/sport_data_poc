@@ -1,3 +1,94 @@
+# POC Avantages Sportifs — Sport Data Solution (Option B)
+
+Ce projet est un POC (Proof of Concept) développé dans le cadre de ma formation Data Engineer chez OpenClassrooms. L'objectif : automatiser le calcul des avantages sportifs accordés aux salariés d'une entreprise fictive, Sport Data Solution.
+
+## C'est quoi concrètement ?
+
+L'entreprise veut récompenser ses salariés qui ont une activité physique, que ce soit pour venir au bureau ou en dehors du travail. Deux avantages sont prévus :
+
+- **Une prime de 5%** du salaire brut annuel pour les salariés qui viennent au bureau à pied, en vélo ou en trottinette (validé automatiquement via Google Maps)
+- **5 jours de bien-être** pour les salariés qui font au moins 15 activités sportives dans l'année
+
+Le pipeline automatise tout : de la récupération des données RH jusqu'à l'envoi de notifications Slack en temps réel et la visualisation dans Power BI.
+
+## Stack technique
+
+| Composant | Outil |
+|---|---|
+| Langage | Python + Pandas |
+| Base de données | PostgreSQL |
+| Streaming | Redpanda (compatible Kafka, via Docker) |
+| Orchestration | Kestra (via Docker) |
+| Qualité des données | Great Expectations v1 |
+| Notifications | Slack (automatique à chaque activité) |
+| Reporting | Power BI (2 pages : KPIs + Monitoring) |
+| Versioning | GitHub |
+
+## Architecture du projet
+
+sport_data_poc/
+├── data/
+│   ├── raw/                        ← fichiers Excel sources (non commités)
+│   └── processed/
+├── src/
+│   ├── ingestion/                  ← load_data.py : chargement Excel → PostgreSQL
+│   ├── simulation/                 ← strava_gen.py : génération activités sportives
+│   ├── validation/                 ← gmaps_check.py : validation trajets Google Maps
+│   ├── eligibility/                ← compute.py : calcul des avantages
+│   ├── quality/                    ← expectations.py : tests Great Expectations
+│   └── notifications/
+│       ├── producer.py             ← publie les activités sur Redpanda
+│       ├── consumer.py             ← écoute Redpanda et envoie sur Slack (permanent)
+│       └── insert_live_activity.py ← insertion d'une activité en temps réel
+├── sql/
+│   └── create_tables.sql           ← schéma PostgreSQL avec commentaires français
+├── orchestration/
+│   └── pipeline.yml                ← flow Kestra (WorkingDirectory + git.Clone)
+├── docker-compose.example.yml      ← template Docker sans secrets
+├── generate_secrets.py             ← génère les secrets base64 pour Kestra
+├── .env.example                    ← template des variables d'environnement
+├── requirements.txt
+└── README.md
+
+## Comment faire tourner le projet
+
+### Prérequis
+
+- Python 3.11 + Anaconda
+- PostgreSQL (local)
+- Docker Desktop
+- Power BI Desktop
+- Clé API Google Maps
+- Token Slack Bot
+
+### Installation
+
+```bash
+# 1. Cloner le repo
+git clone https://github.com/TabBah1/sport_data_poc.git
+cd sport_data_poc
+
+# 2. Créer et activer l'environnement
+conda create -n sport_data_poc python=3.11 -y
+conda activate sport_data_poc
+conda install numpy -y
+pip install -r requirements.txt
+
+# 3. Créer le fichier .env depuis le template
+cp .env.example .env
+# Remplir les variables dans .env avec vos vraies valeurs
+```
+
+### Configuration `.env`
+
+DATABASE_URL=postgresql://postgres:VOTRE_MOT_DE_PASSE@localhost:5432/sport_poc
+GOOGLE_MAPS_API_KEY=votre_clé_google_maps
+SLACK_BOT_TOKEN=xoxb-votre-token-slack
+SLACK_CHANNEL=sport-data-poc
+BONUS_RATE=0.05
+WELLNESS_MIN_ACTIVITIES=15
+WELLNESS_DAYS=5
+
 ### Lancer l'infrastructure Docker
 
 ```bash
