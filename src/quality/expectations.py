@@ -1,7 +1,7 @@
 import os
 import logging
 import pandas as pd
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
 import great_expectations as gx
 
@@ -20,6 +20,14 @@ def get_engine():
         raise ValueError("DATABASE_URL manquant dans .env")
     return create_engine(DB_URL)
 
+def log_pipeline(engine, step: str, status: str, message: str):
+    with engine.connect() as conn:
+        conn.execute(
+            text("INSERT INTO pipeline_logs (step, status, message) VALUES (:step, :status, :message)"),
+            {"step": step, "status": status, "message": message}
+        )
+        conn.commit()
+
 def run_expectations():
     engine = get_engine()
     context = gx.get_context()
@@ -35,7 +43,6 @@ def run_expectations():
     )
 
     suite = context.suites.add(gx.ExpectationSuite(name="employees_suite"))
-
     suite.add_expectation(gx.expectations.ExpectColumnValuesToNotBeNull(column="employee_id"))
     suite.add_expectation(gx.expectations.ExpectColumnValuesToBeUnique(column="employee_id"))
     suite.add_expectation(gx.expectations.ExpectColumnValuesToNotBeNull(column="gross_salary"))
@@ -48,6 +55,9 @@ def run_expectations():
 
     result = batch.validate(suite)
     results_summary.append(("employees", result.success))
+    status_employees = "success" if result.success else "error"
+    log_pipeline(engine, "expectations_employees", status_employees,
+                 f"employees : {'PASSED' if result.success else 'FAILED'}")
     logger.info(f"employees : {'✓ OK' if result.success else '✗ ÉCHEC'}")
 
     # ─── 2. TABLE ACTIVITIES ──────────────────────────────────────
@@ -60,7 +70,6 @@ def run_expectations():
     )
 
     suite2 = context.suites.add(gx.ExpectationSuite(name="activities_suite"))
-
     suite2.add_expectation(gx.expectations.ExpectColumnValuesToNotBeNull(column="employee_id"))
     suite2.add_expectation(gx.expectations.ExpectColumnValuesToNotBeNull(column="start_date"))
     suite2.add_expectation(gx.expectations.ExpectColumnValuesToNotBeNull(column="sport_name"))
@@ -71,6 +80,9 @@ def run_expectations():
 
     result2 = batch2.validate(suite2)
     results_summary.append(("activities", result2.success))
+    status_activities = "success" if result2.success else "error"
+    log_pipeline(engine, "expectations_activities", status_activities,
+                 f"activities : {'PASSED' if result2.success else 'FAILED'}")
     logger.info(f"activities : {'✓ OK' if result2.success else '✗ ÉCHEC'}")
 
     # ─── 3. TABLE COMMUTE_VALIDATION ──────────────────────────────
@@ -83,7 +95,6 @@ def run_expectations():
     )
 
     suite3 = context.suites.add(gx.ExpectationSuite(name="commute_suite"))
-
     suite3.add_expectation(gx.expectations.ExpectColumnValuesToNotBeNull(column="employee_id"))
     suite3.add_expectation(gx.expectations.ExpectColumnValuesToBeBetween(
         column="distance_km", min_value=0
@@ -95,6 +106,9 @@ def run_expectations():
 
     result3 = batch3.validate(suite3)
     results_summary.append(("commute_validation", result3.success))
+    status_commute = "success" if result3.success else "error"
+    log_pipeline(engine, "expectations_commute", status_commute,
+                 f"commute_validation : {'PASSED' if result3.success else 'FAILED'}")
     logger.info(f"commute_validation : {'✓ OK' if result3.success else '✗ ÉCHEC'}")
 
     # ─── RÉSUMÉ ───────────────────────────────────────────────────
@@ -104,6 +118,12 @@ def run_expectations():
         logger.info(f"  {table:25s} : {'✓ PASSED' if success else '✗ FAILED'}")
     logger.info("─" * 40)
     logger.info(f"Résultat global : {'✓ TOUS LES TESTS PASSÉS' if all_passed else '✗ DES TESTS ONT ÉCHOUÉ'}")
+
+    # Log global dans pipeline_logs
+    global_status = "success" if all_passed else "error"
+    tables_passed = sum(1 for _, s in results_summary if s)
+    log_pipeline(engine, "expectations_global", global_status,
+                 f"{tables_passed}/{len(results_summary)} suites validées")
 
     return all_passed
 

@@ -17,10 +17,13 @@ DB_URL = os.getenv("DATABASE_URL")
 GMAPS_KEY = os.getenv("GOOGLE_MAPS_API_KEY")
 COMPANY_ADDRESS = "1362 Av. des Platanes, 34970 Lattes, France"
 
-# Règles de validation (en km)
+# Règles de validation (en km) — configurables via .env
+WALKING_MAX_KM = float(os.getenv("WALKING_MAX_KM", "15"))
+CYCLING_MAX_KM = float(os.getenv("CYCLING_MAX_KM", "25"))
+
 LIMITS = {
-    "walking_running": 15,
-    "cycling_scooter": 25,
+    "walking_running": WALKING_MAX_KM,
+    "cycling_scooter": CYCLING_MAX_KM,
 }
 
 GMAPS_MODE = {
@@ -61,8 +64,8 @@ def get_distance_km(origin: str, mode: str) -> float | None:
     return None
 
 def validate_commutes(engine):
+    logger.info(f"Paramètres actifs : marche/running={WALKING_MAX_KM}km, vélo/trottinette={CYCLING_MAX_KM}km")
     logger.info("Récupération des salariés à valider...")
-
     with engine.connect() as conn:
         result = conn.execute(text("""
             SELECT employee_id, address, commute_mode
