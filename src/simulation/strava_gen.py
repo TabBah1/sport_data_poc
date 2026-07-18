@@ -19,6 +19,12 @@ logger = logging.getLogger(__name__)
 DB_URL = os.getenv("DATABASE_URL")
 fake = Faker("fr_FR")
 
+# Seed fixe : garantit que chaque execution du pipeline produit exactement
+# les memes activites simulees (memes chiffres qu'en soutenance / dans les slides).
+# Sans cette ligne, random.randint et random.choice varient a chaque run.
+random.seed(42)
+Faker.seed(42)
+
 # Paramètres par sport : (distance_min_m, distance_max_m, duree_min_min, duree_max_min, avec_distance)
 SPORT_PARAMS = {
     "Running":        (3000,  20000, 20,  90,  True),

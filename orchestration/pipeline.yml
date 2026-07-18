@@ -12,19 +12,15 @@ tasks:
         url: https://github.com/TabBah1/sport_data_poc.git
         branch: main
 
-      - id: install_dependencies
-        type: io.kestra.plugin.scripts.python.Commands
-        taskRunner:
-          type: io.kestra.plugin.core.runner.Process
-        beforeCommands:
-          - pip install --quiet pandas sqlalchemy psycopg2-binary python-dotenv requests faker slack-sdk kafka-python great-expectations
-        commands:
-          - echo "Dependances installees"
-
       - id: ingestion
         type: io.kestra.plugin.scripts.python.Commands
         taskRunner:
           type: io.kestra.plugin.core.runner.Process
+        beforeCommands:
+          - mkdir -p data/raw
+          - cp "/app/project/data/raw/Donnees RH.xlsx" "data/raw/Donnees RH.xlsx"
+          - cp "/app/project/data/raw/Donnees Sportive.xlsx" "data/raw/Donnees Sportive.xlsx"
+          - pip install --quiet --cache-dir /app/project/.pip-cache pandas openpyxl sqlalchemy psycopg2-binary python-dotenv
         env:
           DATABASE_URL: "{{ secret('DATABASE_URL') }}"
         commands:
@@ -34,6 +30,8 @@ tasks:
         type: io.kestra.plugin.scripts.python.Commands
         taskRunner:
           type: io.kestra.plugin.core.runner.Process
+        beforeCommands:
+          - pip install --quiet --cache-dir /app/project/.pip-cache pandas sqlalchemy psycopg2-binary python-dotenv faker
         env:
           DATABASE_URL: "{{ secret('DATABASE_URL') }}"
         commands:
@@ -43,6 +41,8 @@ tasks:
         type: io.kestra.plugin.scripts.python.Commands
         taskRunner:
           type: io.kestra.plugin.core.runner.Process
+        beforeCommands:
+          - pip install --quiet --cache-dir /app/project/.pip-cache sqlalchemy psycopg2-binary python-dotenv requests
         env:
           DATABASE_URL: "{{ secret('DATABASE_URL') }}"
           GOOGLE_MAPS_API_KEY: "{{ secret('GOOGLE_MAPS_API_KEY') }}"
@@ -53,6 +53,8 @@ tasks:
         type: io.kestra.plugin.scripts.python.Commands
         taskRunner:
           type: io.kestra.plugin.core.runner.Process
+        beforeCommands:
+          - pip install --quiet --cache-dir /app/project/.pip-cache sqlalchemy psycopg2-binary python-dotenv
         env:
           DATABASE_URL: "{{ secret('DATABASE_URL') }}"
           BONUS_RATE: "{{ secret('BONUS_RATE') }}"
@@ -65,6 +67,8 @@ tasks:
         type: io.kestra.plugin.scripts.python.Commands
         taskRunner:
           type: io.kestra.plugin.core.runner.Process
+        beforeCommands:
+          - pip install --quiet --cache-dir /app/project/.pip-cache pandas sqlalchemy psycopg2-binary python-dotenv great-expectations
         env:
           DATABASE_URL: "{{ secret('DATABASE_URL') }}"
         commands:
@@ -74,22 +78,13 @@ tasks:
         type: io.kestra.plugin.scripts.python.Commands
         taskRunner:
           type: io.kestra.plugin.core.runner.Process
+        beforeCommands:
+          - pip install --quiet --cache-dir /app/project/.pip-cache sqlalchemy psycopg2-binary python-dotenv kafka-python
         env:
           DATABASE_URL: "{{ secret('DATABASE_URL') }}"
           KAFKA_BROKER: redpanda:9092
         commands:
           - python src/notifications/producer.py
-
-      - id: streaming_consumer
-        type: io.kestra.plugin.scripts.python.Commands
-        taskRunner:
-          type: io.kestra.plugin.core.runner.Process
-        env:
-          SLACK_BOT_TOKEN: "{{ secret('SLACK_BOT_TOKEN') }}"
-          SLACK_CHANNEL: "{{ secret('SLACK_CHANNEL') }}"
-          KAFKA_BROKER: redpanda:9092
-        commands:
-          - python src/notifications/consumer.py
 
 triggers:
   - id: schedule

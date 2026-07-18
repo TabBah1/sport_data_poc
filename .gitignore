@@ -13,6 +13,7 @@ data/processed/
 dist/
 build/
 .pytest_cache/
+.pip-cache/
 
 # IDE
 .vscode/
@@ -23,3 +24,5 @@ build/
 Thumbs.db
 
 docker-compose.yml
+# Fichiers temporaires Office (verrous)
+~$*
