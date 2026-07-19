@@ -150,8 +150,19 @@ python src/notifications/insert_live_activity.py 59019 "Course à pied" 10800 46
 
 ### Modifier les paramètres à la volée
 
+Cinq paramètres sont configurables dans `.env` sans toucher au code :
+
+| Variable | Effet | Script à relancer |
+|---|---|---|
+| `BONUS_RATE` | Taux de la prime sportive (défaut 5%) | `compute.py` |
+| `WELLNESS_MIN_ACTIVITIES` | Seuil d'activités pour les jours bien-être (défaut 15) | `compute.py` |
+| `WELLNESS_DAYS` | Nombre de jours bien-être accordés (défaut 5) | `compute.py` |
+| `WALKING_MAX_KM` | Distance max marche/running validée (défaut 15 km) | `gmaps_check.py` puis `compute.py` |
+| `CYCLING_MAX_KM` | Distance max vélo/trottinette validée (défaut 25 km) | `gmaps_check.py` puis `compute.py` |
+
 ```bash
-# Dans .env, changer par exemple :
+# Exemple : changer le taux de prime
+# Dans .env :
 BONUS_RATE=0.07
 
 # Puis relancer :
@@ -159,6 +170,18 @@ python src/eligibility/compute.py
 # → Nouveau coût calculé et mis à jour en base
 # → Actualiser Power BI pour voir l'évolution
 ```
+
+```bash
+# Exemple : changer les seuils de distance de trajet
+# Dans .env :
+WALKING_MAX_KM=20
+
+# Ces paramètres affectent la validation Google Maps, donc relancer dans cet ordre :
+python src/validation/gmaps_check.py   # ~30-60s, appelle l'API Google Maps
+python src/eligibility/compute.py
+```
+
+**Reproductibilité :** `strava_gen.py` utilise une graine aléatoire fixe (`random.seed(42)`), donc les chiffres ci-dessus restent identiques à chaque exécution du pipeline, tant que le nombre de salariés/sports ne change pas.
 
 ### Orchestration avec Kestra
 
@@ -173,9 +196,9 @@ Kestra est accessible sur `http://localhost:8080`. Le flow `sport_data_pipeline`
 Sur un échantillon de 161 salariés :
 
 - **68 salariés** éligibles à la prime sportive (vélo, trottinette, marche/running)
-- **94 salariés** éligibles aux 5 jours bien-être (≥ 15 activités/an)
-- **172 482,50 €** de coût total des primes sportives (taux 5%)
-- **470 jours** bien-être accordés
+- **95 salariés** éligibles aux 5 jours bien-être (≥ 15 activités/an)
+- **172 483 €** de coût total des primes sportives (taux 5%)
+- **475 jours** bien-être accordés
 - **~2 500 activités** simulées sur 12 mois
 - **Tous les tests Great Expectations passés** (3 tables validées)
 
