@@ -26,6 +26,7 @@ Le pipeline automatise tout : de la récupération des données RH jusqu'à l'en
 
 ## Architecture du projet
 
+```
 sport_data_poc/
 ├── data/
 │   ├── raw/                        ← fichiers Excel sources (non commités)
@@ -49,6 +50,7 @@ sport_data_poc/
 ├── .env.example                    ← template des variables d'environnement
 ├── requirements.txt
 └── README.md
+```
 
 ## Comment faire tourner le projet
 
@@ -81,6 +83,7 @@ cp .env.example .env
 
 ### Configuration `.env`
 
+```
 DATABASE_URL=postgresql://postgres:VOTRE_MOT_DE_PASSE@localhost:5432/sport_poc
 GOOGLE_MAPS_API_KEY=votre_clé_google_maps
 SLACK_BOT_TOKEN=xoxb-votre-token-slack
@@ -88,6 +91,7 @@ SLACK_CHANNEL=sport-data-poc
 BONUS_RATE=0.05
 WELLNESS_MIN_ACTIVITIES=15
 WELLNESS_DAYS=5
+```
 
 ### Lancer l'infrastructure Docker
 
@@ -181,7 +185,7 @@ python src/validation/gmaps_check.py   # ~30-60s, appelle l'API Google Maps
 python src/eligibility/compute.py
 ```
 
-**Reproductibilité :** `strava_gen.py` utilise une graine aléatoire fixe (`random.seed(42)`), donc les chiffres ci-dessus restent identiques à chaque exécution du pipeline, tant que le nombre de salariés/sports ne change pas.
+> **Reproductibilité :** `strava_gen.py` utilise une graine aléatoire fixe (`random.seed(42)`), donc les chiffres ci-dessus restent identiques à chaque exécution du pipeline, tant que le nombre de salariés/sports ne change pas.
 
 ### Orchestration avec Kestra
 
