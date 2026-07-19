@@ -47,13 +47,33 @@ def format_message(activity: dict) -> str:
         "Natation": "nager",
     }.get(sport, f"faire du {sport}")
 
+    # Emoji selon le sport, pour se rapprocher du ton attendu (note de cadrage)
+    emoji = {
+        "Running":         "🔥🏅",
+        "Course à pied":   "🔥🏅",
+        "Randonnée":       "🌄",
+        "Natation":        "🏊",
+        "Tennis":          "🎾",
+        "Football":        "⚽",
+        "Rugby":           "🏉",
+        "Badminton":       "🏸",
+        "Voile":           "⛵",
+        "Boxe":            "🥊",
+        "Judo":            "🥋",
+        "Escalade":        "🧗",
+        "Triathlon":       "🏊🚴🏃",
+        "Tennis de table": "🏓",
+        "Équitation":      "🐎",
+        "Basketball":      "🏀",
+    }.get(sport, "💪")
+
     if distance_m and duration_min:
         distance_km = round(distance_m / 1000, 1)
-        msg = f"Bravo {first_name} {last_name} ! Tu viens de {verbe} {distance_km} km en {duration_min} min !"
+        msg = f"Bravo {first_name} {last_name} ! Tu viens de {verbe} {distance_km} km en {duration_min} min ! Quelle énergie ! {emoji}"
     elif duration_min:
-        msg = f"Bravo {first_name} {last_name} ! Tu viens de faire {duration_min} min de {sport} !"
+        msg = f"Bravo {first_name} {last_name} ! Tu viens de faire {duration_min} min de {sport} ! {emoji}"
     else:
-        msg = f"Bravo {first_name} {last_name} ! Séance de {sport} terminée !"
+        msg = f"Bravo {first_name} {last_name} ! Séance de {sport} terminée ! {emoji}"
 
     if comment:
         msg += f' ("{comment}")'
